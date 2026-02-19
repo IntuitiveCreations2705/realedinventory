@@ -55,7 +55,10 @@ function initializeDatabase() {
   `);
 }
 
-// User operations
+// Initialize the database first
+initializeDatabase();
+
+// User operations - prepared after initialization
 const userOps = {
   create: db.prepare(`
     INSERT INTO users (username, password_hash, role)
@@ -126,7 +129,6 @@ const activityOps = {
 
 module.exports = {
   db,
-  initializeDatabase,
   userOps,
   inventoryOps,
   activityOps

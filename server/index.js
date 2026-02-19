@@ -2,19 +2,16 @@ require('dotenv').config();
 const express = require('express');
 const session = require('express-session');
 const cookieParser = require('cookie-parser');
-const csrf = require('csurf');
+const csrfProtection = require('./csrf');
 const helmet = require('helmet');
 const rateLimit = require('express-rate-limit');
 const bcrypt = require('bcrypt');
 const path = require('path');
 const { body, validationResult } = require('express-validator');
-const { initializeDatabase, userOps, inventoryOps, activityOps } = require('./database');
+const { userOps, inventoryOps, activityOps } = require('./database');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
-
-// Initialize database
-initializeDatabase();
 
 // Create default admin user if none exists
 async function createDefaultAdmin() {
@@ -68,14 +65,14 @@ app.use(session({
   resave: false,
   saveUninitialized: false,
   cookie: {
-    secure: process.env.NODE_ENV === 'production',
+    secure: process.env.NODE_ENV === 'production' && process.env.USE_HTTPS === 'true',
     httpOnly: true,
     maxAge: 24 * 60 * 60 * 1000 // 24 hours
   }
 }));
 
-// CSRF protection
-const csrfProtection = csrf({ cookie: true });
+// CSRF protection - no options needed
+// This middleware should be applied to routes that need protection
 
 // Serve static files
 app.use(express.static(path.join(__dirname, '../public')));
