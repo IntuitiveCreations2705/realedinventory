@@ -1,0 +1,24 @@
+version: '3.8'
+
+services:
+  inventory:
+    build: .
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./data:/app/data
+      - ./backups:/app/backups
+    environment:
+      - NODE_ENV=production
+      - PORT=3000
+      - SESSION_SECRET=${SESSION_SECRET:-change-this-to-a-random-secret}
+      - DB_PATH=/app/data/inventory.db
+      - BACKUP_ENABLED=true
+      - BACKUP_INTERVAL=86400000
+      - BACKUP_DIR=/app/backups
+      - LOW_STOCK_THRESHOLD=10
+      - RATE_LIMIT_WINDOW_MS=900000
+      - RATE_LIMIT_MAX_REQUESTS=100
+      - DEFAULT_ADMIN_USERNAME=admin
+      - DEFAULT_ADMIN_PASSWORD=admin123
+    restart: unless-stopped
