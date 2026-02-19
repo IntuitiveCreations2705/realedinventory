@@ -1,6 +1,6 @@
 # 🏢 Real Ed Inventory
 
-A simple, automated, and secure inventory management system designed for very novice operators.
+A simple, automated, and secure inventory management system designed for very novice operators. Perfect for small businesses, schools, warehouses, or any organization that needs to track inventory without complexity.
 
 ## ✨ Features
 
