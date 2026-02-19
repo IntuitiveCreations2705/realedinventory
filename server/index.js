@@ -77,6 +77,9 @@ app.use(session({
 // Serve static files
 app.use(express.static(path.join(__dirname, '../public')));
 
+// Apply CSRF protection globally (it skips GET requests automatically)
+app.use(csrfProtection);
+
 // Authentication middleware
 function requireAuth(req, res, next) {
   if (req.session.userId) {
@@ -87,7 +90,7 @@ function requireAuth(req, res, next) {
 }
 
 // Login endpoint
-app.post('/api/login', csrfProtection, [
+app.post('/api/login', [
   body('username').trim().notEmpty().withMessage('Username is required'),
   body('password').notEmpty().withMessage('Password is required')
 ], async (req, res) => {
@@ -154,7 +157,7 @@ app.get('/api/user', requireAuth, (req, res) => {
 });
 
 // Get CSRF token
-app.get('/api/csrf-token', csrfProtection, (req, res) => {
+app.get('/api/csrf-token', (req, res) => {
   res.json({ csrfToken: req.csrfToken() });
 });
 
@@ -194,7 +197,7 @@ app.get('/api/inventory/search', requireAuth, (req, res) => {
   }
 });
 
-app.post('/api/inventory', requireAuth, csrfProtection, [
+app.post('/api/inventory', requireAuth, [
   body('name').trim().notEmpty().withMessage('Name is required'),
   body('quantity').isInt({ min: 0 }).withMessage('Quantity must be a non-negative number'),
   body('min_stock').optional().isInt({ min: 0 }).withMessage('Min stock must be a non-negative number')
@@ -231,7 +234,7 @@ app.post('/api/inventory', requireAuth, csrfProtection, [
   }
 });
 
-app.put('/api/inventory/:id', requireAuth, csrfProtection, [
+app.put('/api/inventory/:id', requireAuth, [
   body('name').trim().notEmpty().withMessage('Name is required'),
   body('quantity').isInt({ min: 0 }).withMessage('Quantity must be a non-negative number'),
   body('min_stock').optional().isInt({ min: 0 }).withMessage('Min stock must be a non-negative number')
@@ -270,7 +273,7 @@ app.put('/api/inventory/:id', requireAuth, csrfProtection, [
   }
 });
 
-app.delete('/api/inventory/:id', requireAuth, csrfProtection, (req, res) => {
+app.delete('/api/inventory/:id', requireAuth, (req, res) => {
   try {
     const { id } = req.params;
     const item = inventoryOps.findById.get(id);
