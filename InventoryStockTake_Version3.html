@@ -1,0 +1,1368 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Stock Take">
+  <title>Inventory Stock Take</title>
+  <style>
+    /* ========================================
+       GLOBAL STYLES
+       ======================================== */
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Arial, sans-serif;
+      -webkit-touch-callout: none;
+      -webkit-user-select: none;
+      user-select: none;
+      touch-action: manipulation;
+      background: #f5f5f5;
+      overflow-x: hidden;
+    }
+
+    input, textarea {
+      -webkit-user-select: text;
+      user-select: text;
+    }
+
+    /* ========================================
+       LOGIN SCREEN
+       ======================================== */
+    #loginScreen {
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      padding: 20px;
+    }
+
+    #loginScreen h1 {
+      font-size: 42px;
+      margin-bottom: 60px;
+      font-weight: 400;
+      text-align: center;
+    }
+
+    #loginScreen p {
+      font-size: 18px;
+      margin-bottom: 20px;
+      color: rgba(255,255,255,0.9);
+    }
+
+    #nameInput {
+      width: 400px;
+      max-width: 90%;
+      padding: 18px 20px;
+      font-size: 20px;
+      border: none;
+      border-radius: 8px;
+      margin-bottom: 10px;
+      background: white;
+      color: #333;
+    }
+
+    #nameInput::placeholder {
+      color: #ccc;
+      font-weight: 300;
+    }
+
+    #nameInput:focus {
+      outline: none;
+      box-shadow: 0 0 0 4px rgba(255,255,255,0.3);
+    }
+
+    #nameError {
+      color: #ffcccc;
+      font-size: 14px;
+      margin-bottom: 30px;
+      visibility: hidden;
+      min-height: 20px;
+    }
+
+    #nameError.show {
+      visibility: visible;
+    }
+
+    #startBtn {
+      padding: 18px 50px;
+      font-size: 20px;
+      background: rgba(255,255,255,0.2);
+      color: white;
+      border: 2px solid white;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: all 0.3s;
+      font-weight: normal;
+    }
+
+    #startBtn:hover:not(:disabled) {
+      background: white;
+      color: #667eea;
+    }
+
+    #startBtn:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+
+    #startBtn:active:not(:disabled) {
+      transform: scale(0.98);
+    }
+
+    /* ========================================
+       MAIN APP CONTAINER
+       ======================================== */
+    #app {
+      display: none;
+      padding: 20px;
+      max-width: 100%;
+      min-height: 100vh;
+    }
+
+    /* ========================================
+       APP HEADER
+       ======================================== */
+    .app-header {
+      background: #667eea;
+      color: white;
+      padding: 20px;
+      border-radius: 10px;
+      margin-bottom: 20px;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 15px;
+    }
+
+    .app-header h1 {
+      font-size: 28px;
+      margin-bottom: 5px;
+      font-weight: 500;
+    }
+
+    .app-header-info {
+      font-size: 14px;
+      opacity: 0.9;
+    }
+
+    .user-badge {
+      background: rgba(255,255,255,0.2);
+      padding: 8px 15px;
+      border-radius: 20px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    #logoutBtn {
+      background: transparent;
+      border: 1px solid white;
+      color: white;
+      padding: 5px 10px;
+      border-radius: 5px;
+      cursor: pointer;
+      font-size: 12px;
+      min-height: auto;
+    }
+
+    #logoutBtn:hover {
+      background: rgba(255,255,255,0.2);
+    }
+
+    /* ========================================
+       DATA STATUS BANNER
+       ======================================== */
+    .data-status {
+      background: white;
+      padding: 15px 20px;
+      border-radius: 8px;
+      margin-bottom: 20px;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+
+    .data-status.warning {
+      background: #fff3cd;
+      border-left: 4px solid #ffc107;
+    }
+
+    .data-status.success {
+      background: #d4edda;
+      border-left: 4px solid #28a745;
+    }
+
+    .data-status-text {
+      font-size: 16px;
+      font-weight: 500;
+    }
+
+    .load-options {
+      display: flex;
+      gap: 5px;
+      align-items: center;
+      position: relative;
+    }
+
+    #loadDataBtn {
+      background: #667eea;
+      color: white;
+      border: none;
+      padding: 10px 20px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 16px;
+      font-weight: 500;
+      min-height: auto;
+    }
+
+    #loadDataBtn:hover {
+      background: #5568d3;
+    }
+
+    #csvFileInput {
+      display: none;
+    }
+
+    /* ========================================
+       FILTER SECTION
+       ======================================== */
+    .filter-section {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 20px;
+      margin-bottom: 20px;
+    }
+
+    .filter-group {
+      background: white;
+      padding: 15px;
+      border-radius: 8px;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+    }
+
+    .filter-group label {
+      display: block;
+      font-weight: 600;
+      margin-bottom: 8px;
+      font-size: 14px;
+      color: #333;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    select {
+      width: 100%;
+      min-height: 50px;
+      font-size: 18px;
+      padding: 12px 15px;
+      border: 2px solid #ddd;
+      border-radius: 8px;
+      background: white;
+      cursor: pointer;
+      touch-action: manipulation;
+      color: #333;
+    }
+
+    select:focus {
+      outline: none;
+      border-color: #667eea;
+      box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.2);
+    }
+
+    select:disabled {
+      background: #f5f5f5;
+      color: #999;
+      cursor: not-allowed;
+    }
+
+    /* ========================================
+       ACTION BUTTONS
+       ======================================== */
+    .action-buttons {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 15px;
+      margin-bottom: 20px;
+    }
+
+    button {
+      min-height: 54px;
+      font-size: 18px;
+      padding: 12px 20px;
+      border-radius: 8px;
+      cursor: pointer;
+      touch-action: manipulation;
+      font-weight: 600;
+      transition: all 0.2s;
+      border: none;
+    }
+
+    button:active:not(:disabled) {
+      transform: scale(0.98);
+    }
+
+    button:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+
+    #confirmBoxBtn {
+      background: #28a745;
+      color: white;
+    }
+
+    #confirmBoxBtn:hover:not(:disabled) {
+      background: #218838;
+    }
+
+    #exportBtn {
+      background: #fd7e14;
+      color: white;
+    }
+
+    #exportBtn:hover:not(:disabled) {
+      background: #e06b0d;
+    }
+
+    /* ========================================
+       PROGRESS INFO
+       ======================================== */
+    .progress-info {
+      background: white;
+      padding: 15px 20px;
+      border-radius: 8px;
+      margin-bottom: 20px;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+      font-size: 16px;
+      text-align: center;
+    }
+
+    .progress-info strong {
+      color: #667eea;
+      font-weight: 600;
+    }
+
+    /* ========================================
+       TABLE CONTAINER
+       ======================================== */
+    .table-container {
+      background: white;
+      border-radius: 8px;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+      overflow: hidden;
+      max-height: calc(100vh - 550px);
+      min-height: 300px;
+      overflow-y: auto;
+      -webkit-overflow-scrolling: touch;
+      margin-bottom: 20px;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+
+    thead {
+      position: sticky;
+      top: 0;
+      background: #667eea;
+      color: white;
+      z-index: 10;
+    }
+
+    th {
+      padding: 15px 10px;
+      text-align: left;
+      font-size: 14px;
+      font-weight: 600;
+      border-bottom: 2px solid #5568d3;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    tbody tr {
+      border-bottom: 1px solid #eee;
+      transition: background 0.2s;
+    }
+
+    tbody tr:hover {
+      background: #f9f9f9;
+    }
+
+    td {
+      padding: 15px 10px;
+      font-size: 15px;
+    }
+
+    .cell-grey {
+      background-color: #f0f0f0;
+    }
+
+    .cell-red {
+      background-color: #ffcccc;
+    }
+
+    .cell-green {
+      background-color: #ccffcc;
+    }
+
+    .onhand-cell {
+      padding: 5px;
+    }
+
+    .onhand-cell select {
+      min-height: 44px;
+      font-size: 16px;
+      padding: 8px 10px;
+      border: 2px solid #ddd;
+    }
+
+    /* ========================================
+       NOTES SECTION
+       ======================================== */
+    .notes-section {
+      background: white;
+      padding: 20px;
+      border-radius: 8px;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+    }
+
+    .notes-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 10px;
+    }
+
+    .notes-header label {
+      font-weight: 600;
+      font-size: 16px;
+      color: #333;
+    }
+
+    #notesAutoSave {
+      font-size: 12px;
+      color: #28a745;
+      font-weight: normal;
+    }
+
+    #sessionNotes {
+      width: 100%;
+      padding: 15px;
+      font-size: 16px;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Arial, sans-serif;
+      border: 2px solid #ddd;
+      border-radius: 8px;
+      resize: vertical;
+      min-height: 120px;
+    }
+
+    #sessionNotes:focus {
+      outline: none;
+      border-color: #667eea;
+      box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.2);
+    }
+
+    .notes-footer {
+      margin-top: 10px;
+      color: #666;
+      font-size: 13px;
+    }
+
+    /* ========================================
+       RESPONSIVE DESIGN
+       ======================================== */
+    @media (max-width: 768px) {
+      #loginScreen h1 {
+        font-size: 32px;
+        margin-bottom: 40px;
+      }
+
+      .app-header {
+        flex-direction: column;
+        align-items: flex-start;
+      }
+
+      .app-header h1 {
+        font-size: 24px;
+      }
+
+      .user-badge {
+        width: 100%;
+        justify-content: space-between;
+      }
+
+      .filter-section {
+        grid-template-columns: 1fr;
+      }
+
+      .action-buttons {
+        grid-template-columns: 1fr;
+      }
+
+      .table-container {
+        max-height: calc(100vh - 700px);
+      }
+
+      th, td {
+        padding: 10px 5px;
+        font-size: 13px;
+      }
+
+      button {
+        font-size: 16px;
+      }
+
+      select {
+        font-size: 16px;
+      }
+    }
+
+    .text-center {
+      text-align: center;
+    }
+  </style>
+</head>
+<body>
+  <!-- ========================================
+       LOGIN SCREEN
+       ======================================== -->
+  <div id="loginScreen">
+    <h1>📦 Inventory Stock Take</h1>
+    
+    <p>Please enter your full name</p>
+    
+    <input 
+      type="text" 
+      id="nameInput" 
+      placeholder="Name"
+      autocomplete="off"
+      autocapitalize="words"
+      autocorrect="off"
+      spellcheck="false"
+    >
+    
+    <p id="nameError">Name must be at least 3 characters</p>
+    
+    <button id="startBtn" disabled>Start Inventory</button>
+  </div>
+
+  <!-- ========================================
+       MAIN APP
+       ======================================== -->
+  <div id="app">
+    <!-- App Header -->
+    <div class="app-header">
+      <div>
+        <h1>📦 Inventory Stock Take</h1>
+        <div class="app-header-info" id="lastSavedInfo">Auto-saving to device...</div>
+      </div>
+      <div class="user-badge">
+        <span id="currentUserDisplay">👤 User</span>
+        <button id="logoutBtn">🚪 Logout</button>
+      </div>
+    </div>
+
+    <!-- Data Status Banner -->
+    <div class="data-status warning" id="dataStatus">
+      <div>
+        <div class="data-status-text" id="dataStatusText">
+          ⚠️ Using sample data (10 items)
+        </div>
+        <div style="font-size: 13px; color: #666; margin-top: 5px;">
+          Load guidata.csv to begin real inventory counting
+        </div>
+      </div>
+      <button id="loadDataBtn">📂 Load Inventory Data</button>
+    </div>
+
+    <input type="file" id="csvFileInput" accept=".csv">
+
+    <!-- Filters -->
+    <div class="filter-section">
+      <div class="filter-group">
+        <label for="eventFilter">Select Event</label>
+        <select id="eventFilter">
+          <option value="">-- Select Event --</option>
+        </select>
+      </div>
+
+      <div class="filter-group">
+        <label for="boxFilter">Select Box</label>
+        <select id="boxFilter" disabled>
+          <option value="">-- Select Event First --</option>
+        </select>
+      </div>
+    </div>
+
+    <!-- Action Buttons -->
+    <div class="action-buttons">
+      <button id="confirmBoxBtn" disabled>✅ CONFIRM BOX</button>
+      <button id="exportBtn">💾 Export Stock Take</button>
+    </div>
+
+    <!-- Progress Info -->
+    <div class="progress-info">
+      <span id="progressText">Select an event to begin</span>
+    </div>
+
+    <!-- Inventory Table -->
+    <div class="table-container">
+      <table id="inventoryTable">
+        <thead>
+          <tr>
+            <th>Box</th>
+            <th>Location</th>
+            <th>Description</th>
+            <th>Crew Notes</th>
+            <th>Req'd</th>
+            <th>OnHand</th>
+          </tr>
+        </thead>
+        <tbody id="inventoryTableBody">
+          <tr>
+            <td colspan="6" class="text-center" style="padding: 50px;">
+              Select an event and box to view inventory
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Notes Section -->
+    <div class="notes-section">
+      <div class="notes-header">
+        <label for="sessionNotes">📝 Stock Take Notes</label>
+        <span id="notesAutoSave">(Auto-saved)</span>
+      </div>
+      <textarea 
+        id="sessionNotes" 
+        placeholder="Found items not in list? Damage? Issues? Type notes here...
+
+Example:
+• Found purple cable in AV 3
+• Box R1 brass bowl cracked
+• Missing power supply from AV 4"
+        rows="6"
+      ></textarea>
+      <div class="notes-footer">
+        <small>
+          These notes will be exported with your stock take data.
+          <span id="notesLastSaved"></span>
+        </small>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========================================
+       JAVASCRIPT
+       ======================================== -->
+  <script>
+    // ============================================
+    // EMBEDDED DATA - Events
+    // ============================================
+    const embeddedEventsData = `EVENT NAME,TAGS
+REAL WOMAN 1,|NEEDED||REAL1||REALWOMAN|
+REAL MAN 1,|NEEDED||REAL1|
+REAL WOMAN 2,|NEEDED||REAL2||REALWOMAN|
+REAL MAN 2,|NEEDED||REAL2|
+REAL SPIRITUAL QUEST,|NEEDED||RSQ|
+REAL RELATIONSHIPS,|NEEDED|
+REAL LIFE DESIGN,|NEEDED||RLD|
+REAL COACH PROGRAM,|NEEDED||RCP|
+REAL TANTRA,|NEEDED||TANTRA|
+ALL,|NEEDED||REAL1||REALWOMAN||REAL2||RSQ||RCP||RLD||TANTRA|
+INACTIVE,|INACTIVE|`;
+
+    // ============================================
+    // EMBEDDED DATA - Sample Inventory
+    // ============================================
+    const embeddedSampleInventory = `ItemID,BoxNumber,ItemName,StorageLocation,EventTags,Description,SpecificItemNotesForCrew,QtyReqd,StockOnHand,CountConfirmed,OrderStock,RestockComments
+HI-000140,AV 3,CABLES:,MARQUEE,|NEEDED|,CABLES:,,0,0,,0,0
+HI-000008,AV 3,25 Mtr Male to Female XLR,MARQUEE,|NEEDED||REAL1|,Speaker Cable,25Mtr XLR,2,2,,0,0
+HI-000042,AV 3,Audiohub Box,MARQUEE,|NEEDED||REAL1|,Digital Audio,Audiohub,0,0,,0,0
+HI-000010,AV 3,Power Supply,MARQUEE,|NEEDED|,Power Supply,Remove batteries,1,,,0,0
+HI-000150,AV 4,Keyboard Wireless,MARQUEE,|NEEDED||REAL1|,Computer Keyboard,,1,1,,0,0
+HI-000151,AV 4,Mouse Wireless,MARQUEE,|NEEDED|,Computer Mouse,,1,,,0,0
+HI-000200,R1,Brass Singing Bowl,MARQUEE,|NEEDED||RSQ|,Meditation Prop,Handle with care,1,1,,0,0
+HI-000201,R1,Cushions Set,MARQUEE,|NEEDED|,Floor Cushions,Set of 6,6,6,,0,0
+HI-000300,Z14,Extension Cord 10m,CONTAINER,|NEEDED|,Power Extension,,2,1,,0,0
+HI-000301,Z14,Power Strip 6-way,CONTAINER,|NEEDED|,Power Distribution,,3,2,,0,0`;
+
+    // ============================================
+    // GLOBAL VARIABLES
+    // ============================================
+    let inventoryData = [];
+    let eventDefinitions = [];
+    let transactionLog = [];
+    let currentUser = '';
+    let currentEvent = '';
+    let currentBox = '';
+    let filteredData = [];
+
+    // ============================================
+    // CSV PARSER
+    // ============================================
+    function parseCSV(csvText) {
+      const lines = csvText.trim().split('\n');
+      const headers = lines[0].split(',').map(function(h) { return h.trim(); });
+      const data = [];
+
+      for (let i = 1; i < lines.length; i++) {
+        const line = lines[i].trim();
+        if (!line) continue;
+        
+        const values = line.split(',');
+        const row = {};
+        
+        headers.forEach(function(header, index) {
+          row[header] = values[index] ? values[index].trim() : '';
+        });
+        
+        data.push(row);
+      }
+
+      return data;
+    }
+
+    // ============================================
+    // START APPLICATION (Called after login)
+    // ============================================
+    function initializeApp() {
+      console.log('🚀 Initializing app...');
+      
+      // Load embedded events
+      eventDefinitions = parseCSV(embeddedEventsData);
+      console.log('✅ Loaded ' + eventDefinitions.length + ' events');
+      
+      // Load sample inventory
+      inventoryData = parseCSV(embeddedSampleInventory);
+      inventoryData.forEach(function(item) {
+        if (!item.RowColor) item.RowColor = '#f0f0f0';
+        if (!item.CountConfirmed) item.CountConfirmed = '';
+      });
+      console.log('✅ Loaded ' + inventoryData.length + ' sample items');
+      
+      // Check for saved work
+      checkForSavedWork();
+      
+      // Setup UI
+      populateEventDropdown();
+      setupMainAppListeners();
+      updateLastSavedDisplay();
+      
+      console.log('✅ App initialized successfully');
+    }
+
+    // ============================================
+    // CHECK FOR SAVED WORK
+    // ============================================
+    function checkForSavedWork() {
+      const savedData = localStorage.getItem('inventoryData');
+      const lastSaved = localStorage.getItem('lastSaved');
+
+      if (savedData && lastSaved) {
+        const timeSince = Date.now() - new Date(lastSaved).getTime();
+        const hoursSince = timeSince / (1000 * 60 * 60);
+
+        if (hoursSince < 12) {
+          if (confirm('Found unsaved work from ' + new Date(lastSaved).toLocaleString() + '\n\nRestore it?')) {
+            inventoryData = JSON.parse(savedData);
+            const savedLog = localStorage.getItem('transactionLog');
+            if (savedLog) transactionLog = JSON.parse(savedLog);
+            
+            const dataStatus = document.getElementById('dataStatus');
+            dataStatus.classList.remove('warning');
+            dataStatus.classList.add('success');
+            document.getElementById('dataStatusText').innerHTML = 
+              '✅ Restored previous session (' + inventoryData.length + ' items)';
+          }
+        }
+      }
+
+      const savedNotes = localStorage.getItem('stockTakeNotes');
+      if (savedNotes) {
+        document.getElementById('sessionNotes').value = savedNotes;
+      }
+    }
+
+    // ============================================
+    // POPULATE EVENT DROPDOWN
+    // ============================================
+    function populateEventDropdown() {
+      const eventFilter = document.getElementById('eventFilter');
+      eventFilter.innerHTML = '<option value="">-- Select Event --</option>';
+
+      eventDefinitions.forEach(function(event) {
+        const option = document.createElement('option');
+        option.value = event['EVENT NAME'];
+        option.textContent = event['EVENT NAME'];
+        eventFilter.appendChild(option);
+      });
+    }
+
+    // ============================================
+    // SETUP MAIN APP LISTENERS
+    // ============================================
+    function setupMainAppListeners() {
+      // Logout button
+      document.getElementById('logoutBtn').addEventListener('click', function() {
+        if (confirm('Logout?\n\nUnsaved work will be preserved.')) {
+          localStorage.removeItem('currentUser');
+          localStorage.removeItem('sessionStartTime');
+          location.reload();
+        }
+      });
+
+      // Load data button
+      document.getElementById('loadDataBtn').addEventListener('click', function() {
+        document.getElementById('csvFileInput').click();
+      });
+
+      // File input
+      document.getElementById('csvFileInput').addEventListener('change', handleFileLoad);
+
+      // Event and box filters
+      document.getElementById('eventFilter').addEventListener('change', handleEventChange);
+      document.getElementById('boxFilter').addEventListener('change', handleBoxChange);
+
+      // Action buttons
+      document.getElementById('confirmBoxBtn').addEventListener('click', handleConfirmBox);
+      document.getElementById('exportBtn').addEventListener('click', handleExport);
+
+      // Notes auto-save
+      let saveTimeout;
+      document.getElementById('sessionNotes').addEventListener('input', function() {
+        clearTimeout(saveTimeout);
+        document.getElementById('notesAutoSave').textContent = '(Saving...)';
+        
+        saveTimeout = setTimeout(function() {
+          localStorage.setItem('stockTakeNotes', document.getElementById('sessionNotes').value);
+          localStorage.setItem('notesLastSaved', new Date().toISOString());
+          document.getElementById('notesAutoSave').textContent = '(Auto-saved ✓)';
+          updateNotesTimestamp();
+        }, 1000);
+      });
+    }
+
+    // ============================================
+    // HANDLE FILE LOAD
+    // ============================================
+    function handleFileLoad(e) {
+      const file = e.target.files[0];
+      if (!file) return;
+
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        try {
+          const csvText = e.target.result;
+          inventoryData = parseCSV(csvText);
+          
+          inventoryData.forEach(function(item) {
+            if (!item.RowColor) item.RowColor = '#f0f0f0';
+            if (!item.CountConfirmed) item.CountConfirmed = '';
+          });
+
+          const dataStatus = document.getElementById('dataStatus');
+          dataStatus.classList.remove('warning');
+          dataStatus.classList.add('success');
+          
+          document.getElementById('dataStatusText').innerHTML = 
+            '✅ Loaded: ' + file.name + ' (' + inventoryData.length + ' items)';
+          
+          saveToLocalStorage();
+          
+          if (currentEvent) {
+            handleEventChange({ target: { value: currentEvent } });
+          }
+          
+          alert('✅ Loaded ' + inventoryData.length + ' items successfully!');
+          
+        } catch (error) {
+          alert('❌ Error loading CSV:\n' + error.message);
+        }
+      };
+      reader.readAsText(file);
+    }
+
+    // ============================================
+    // HANDLE EVENT CHANGE
+    // ============================================
+    function handleEventChange(e) {
+      currentEvent = e.target.value;
+      currentBox = '';
+
+      if (!currentEvent) {
+        document.getElementById('boxFilter').innerHTML = '<option value="">-- Select Event First --</option>';
+        document.getElementById('boxFilter').disabled = true;
+        clearTable();
+        return;
+      }
+
+      const eventDef = eventDefinitions.find(function(ev) { 
+        return ev['EVENT NAME'] === currentEvent; 
+      });
+      const eventTags = eventDef ? eventDef.TAGS : '';
+
+      filteredData = inventoryData.filter(function(item) {
+        if (!eventTags || !item.EventTags) return false;
+        
+        const itemTagsArray = item.EventTags.split('|').filter(function(t) { return t; });
+        const eventTagsArray = eventTags.split('|').filter(function(t) { return t; });
+
+        return eventTagsArray.some(function(tag) { 
+          return itemTagsArray.indexOf(tag) !== -1; 
+        });
+      });
+
+      populateBoxDropdown();
+      updateProgress();
+    }
+
+    // ============================================
+    // POPULATE BOX DROPDOWN
+    // ============================================
+    function populateBoxDropdown() {
+      const boxFilter = document.getElementById('boxFilter');
+      boxFilter.innerHTML = '<option value="">All Boxes</option>';
+      boxFilter.disabled = false;
+
+      const boxCounts = {};
+      filteredData.forEach(function(item) {
+        const box = item.BoxNumber || 'Unknown';
+        boxCounts[box] = (boxCounts[box] || 0) + 1;
+      });
+
+      const sortedBoxes = Object.keys(boxCounts).sort(function(a, b) {
+        return a.localeCompare(b, undefined, { numeric: true, sensitivity: 'base' });
+      });
+
+      sortedBoxes.forEach(function(box) {
+        const option = document.createElement('option');
+        option.value = box;
+        option.textContent = box + ' (' + boxCounts[box] + ' items)';
+        boxFilter.appendChild(option);
+      });
+    }
+
+    // ============================================
+    // HANDLE BOX CHANGE
+    // ============================================
+    function handleBoxChange(e) {
+      currentBox = e.target.value;
+
+      if (currentBox && currentBox !== 'All Boxes') {
+        filteredData.forEach(function(item) {
+          if (item.BoxNumber === currentBox && item.RowColor === '#f0f0f0') {
+            item.RowColor = '#ffcccc';
+          }
+        });
+
+        saveToLocalStorage();
+        document.getElementById('confirmBoxBtn').disabled = false;
+        document.getElementById('confirmBoxBtn').textContent = '✅ CONFIRM BOX ' + currentBox;
+      } else {
+        document.getElementById('confirmBoxBtn').disabled = true;
+        document.getElementById('confirmBoxBtn').textContent = '✅ CONFIRM BOX';
+      }
+
+      renderTable();
+      updateProgress();
+    }
+
+    // ============================================
+    // RENDER TABLE
+    // ============================================
+    function renderTable() {
+      const tbody = document.getElementById('inventoryTableBody');
+      tbody.innerHTML = '';
+
+      let displayData = filteredData;
+      if (currentBox && currentBox !== 'All Boxes') {
+        displayData = filteredData.filter(function(item) { 
+          return item.BoxNumber === currentBox; 
+        });
+      }
+
+      if (displayData.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="6" class="text-center" style="padding: 50px;">No items to display</td></tr>';
+        return;
+      }
+
+      displayData.forEach(function(item) {
+        const row = document.createElement('tr');
+        row.className = item.RowColor === '#f0f0f0' ? 'cell-grey' : 
+                        item.RowColor === '#ffcccc' ? 'cell-red' : 'cell-green';
+
+        const qtyReqd = parseInt(item.QtyReqd) || 0;
+        let dropdownOptions = '<option value="">--</option>';
+        for (let i = 0; i <= qtyReqd; i++) {
+          const selected = item.StockOnHand == i ? 'selected' : '';
+          dropdownOptions += '<option value="' + i + '" ' + selected + '>' + i + '</option>';
+        }
+
+        row.innerHTML = 
+          '<td>' + (item.BoxNumber || '') + '</td>' +
+          '<td>' + (item.StorageLocation || '') + '</td>' +
+          '<td>' + (item.Description || '') + '</td>' +
+          '<td>' + (item.SpecificItemNotesForCrew || '') + '</td>' +
+          '<td>' + (item.QtyReqd || '') + '</td>' +
+          '<td class="onhand-cell">' +
+            '<select data-itemid="' + item.ItemID + '" onchange="handleOnHandChange(this)">' +
+              dropdownOptions +
+            '</select>' +
+          '</td>';
+
+        tbody.appendChild(row);
+      });
+    }
+
+    // ============================================
+    // HANDLE ONHAND CHANGE
+    // ============================================
+    function handleOnHandChange(select) {
+      const itemID = select.getAttribute('data-itemid');
+      const newValue = select.value;
+      const item = inventoryData.find(function(i) { return i.ItemID === itemID; });
+
+      if (!item) return;
+
+      const oldValue = item.StockOnHand;
+      item.StockOnHand = newValue;
+      item.RowColor = '#ccffcc';
+
+      logTransaction('item_counted', itemID, oldValue, newValue, item.BoxNumber);
+      saveToLocalStorage();
+
+      const row = select.closest('tr');
+      row.className = 'cell-green';
+
+      updateProgress();
+      updateLastSavedDisplay();
+    }
+
+    // ============================================
+    // LOG TRANSACTION
+    // ============================================
+    function logTransaction(action, itemID, oldValue, newValue, boxNumber) {
+      transactionLog.push({
+        timestamp: new Date().toISOString(),
+        user: currentUser,
+        device: 'WebApp',
+        event: currentEvent,
+        box: boxNumber,
+        itemID: itemID,
+        old_value: oldValue || '',
+        new_value: newValue || '',
+        action: action
+      });
+
+      localStorage.setItem('transactionLog', JSON.stringify(transactionLog));
+    }
+
+    // ============================================
+    // SAVE TO LOCALSTORAGE
+    // ============================================
+    function saveToLocalStorage() {
+      try {
+        localStorage.setItem('inventoryData', JSON.stringify(inventoryData));
+        localStorage.setItem('lastSaved', new Date().toISOString());
+      } catch (error) {
+        console.warn('LocalStorage error:', error);
+      }
+    }
+
+    // ============================================
+    // UPDATE DISPLAYS
+    // ============================================
+    function updateLastSavedDisplay() {
+      const lastSaved = localStorage.getItem('lastSaved');
+      if (lastSaved) {
+        const date = new Date(lastSaved);
+        document.getElementById('lastSavedInfo').textContent = 
+          'Last saved: ' + date.toLocaleTimeString();
+      }
+    }
+
+    function updateNotesTimestamp() {
+      const lastSaved = localStorage.getItem('notesLastSaved');
+      if (lastSaved) {
+        const date = new Date(lastSaved);
+        document.getElementById('notesLastSaved').textContent = 
+          'Last saved: ' + date.toLocaleTimeString();
+      }
+    }
+
+    function updateProgress() {
+      if (!currentEvent) {
+        document.getElementById('progressText').textContent = 'Select an event to begin';
+        return;
+      }
+
+      const total = filteredData.length;
+      const counted = filteredData.filter(function(item) { 
+        return item.RowColor === '#ccffcc'; 
+      }).length;
+      const inProgress = filteredData.filter(function(item) { 
+        return item.RowColor === '#ffcccc'; 
+      }).length;
+
+      document.getElementById('progressText').innerHTML = 
+        '<strong>Total:</strong> ' + total + ' | ' +
+        '<strong style="color: #28a745;">Counted:</strong> ' + counted + ' | ' +
+        '<strong style="color: #dc3545;">In Progress:</strong> ' + inProgress;
+    }
+
+    // ============================================
+    // HANDLE CONFIRM BOX
+    // ============================================
+    function handleConfirmBox() {
+      if (!currentBox || currentBox === 'All Boxes') return;
+
+      logTransaction('box_confirmed', '', '', '', currentBox);
+
+      const boxFilter = document.getElementById('boxFilter');
+      const options = Array.from(boxFilter.options).filter(function(opt) { 
+        return opt.value && opt.value !== 'All Boxes'; 
+      });
+      const currentIndex = options.findIndex(function(opt) { 
+        return opt.value === currentBox; 
+      });
+
+      if (currentIndex >= 0 && currentIndex < options.length - 1) {
+        boxFilter.value = options[currentIndex + 1].value;
+        boxFilter.dispatchEvent(new Event('change'));
+      } else {
+        boxFilter.value = '';
+        boxFilter.dispatchEvent(new Event('change'));
+        alert('✅ All boxes completed!');
+      }
+
+      saveToLocalStorage();
+    }
+
+    // ============================================
+    // HANDLE EXPORT
+    // ============================================
+    function handleExport() {
+      const timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, -5);
+
+      // Export Inventory CSV
+      let inventoryCSV = 'ItemID,BoxNumber,ItemName,StorageLocation,EventTags,Description,SpecificItemNotesForCrew,QtyReqd,StockOnHand,CountConfirmed,OrderStock,RestockComments,RowColor\n';
+      
+      inventoryData.forEach(function(item) {
+        inventoryCSV += 
+          (item.ItemID || '') + ',' +
+          (item.BoxNumber || '') + ',' +
+          (item.ItemName || '') + ',' +
+          (item.StorageLocation || '') + ',' +
+          (item.EventTags || '') + ',' +
+          (item.Description || '') + ',' +
+          (item.SpecificItemNotesForCrew || '') + ',' +
+          (item.QtyReqd || '') + ',' +
+          (item.StockOnHand || '') + ',' +
+          (item.CountConfirmed || '') + ',' +
+          (item.OrderStock || '') + ',' +
+          (item.RestockComments || '') + ',' +
+          (item.RowColor || '#f0f0f0') + '\n';
+      });
+
+      downloadCSV(inventoryCSV, 'STOCKTAKE_' + timestamp + '.csv');
+
+      // Export Transaction Log
+      let logCSV = 'timestamp,user,device,event,box,itemID,old_value,new_value,action\n';
+      
+      transactionLog.forEach(function(t) {
+        logCSV += 
+          t.timestamp + ',' +
+          t.user + ',' +
+          t.device + ',' +
+          t.event + ',' +
+          t.box + ',' +
+          t.itemID + ',' +
+          t.old_value + ',' +
+          t.new_value + ',' +
+          t.action + '\n';
+      });
+
+      downloadCSV(logCSV, 'TRANSACTIONS_' + timestamp + '.csv');
+
+      // Export Notes
+      const notes = document.getElementById('sessionNotes').value;
+      if (notes.trim()) {
+        const notesContent = 
+          '========================================\n' +
+          'STOCK TAKE NOTES\n' +
+          '========================================\n' +
+          'Date: ' + new Date().toLocaleString() + '\n' +
+          'Performed By: ' + currentUser + '\n' +
+          'Device: WebApp\n' +
+          'Event: ' + currentEvent + '\n\n' +
+          '----------------------------------------\n' +
+          notes + '\n' +
+          '========================================\n';
+        
+        downloadTextFile(notesContent, 'NOTES_' + timestamp + '.txt');
+      }
+
+      alert('✅ Export complete!\n\nFiles downloaded:\n- STOCKTAKE_' + timestamp + '.csv\n- TRANSACTIONS_' + timestamp + '.csv' + (notes.trim() ? '\n- NOTES_' + timestamp + '.txt' : ''));
+    }
+
+    // ============================================
+    // DOWNLOAD FUNCTIONS
+    // ============================================
+    function downloadCSV(csvContent, filename) {
+      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+      const link = document.createElement('a');
+      const url = URL.createObjectURL(blob);
+      
+      link.setAttribute('href', url);
+      link.setAttribute('download', filename);
+      link.style.display = 'none';
+      
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      
+      setTimeout(function() {
+        URL.revokeObjectURL(url);
+      }, 100);
+    }
+
+    function downloadTextFile(content, filename) {
+      const blob = new Blob([content], { type: 'text/plain;charset=utf-8;' });
+      const link = document.createElement('a');
+      const url = URL.createObjectURL(blob);
+      
+      link.setAttribute('href', url);
+      link.setAttribute('download', filename);
+      link.style.display = 'none';
+      
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      
+      setTimeout(function() {
+        URL.revokeObjectURL(url);
+      }, 100);
+    }
+
+    // ============================================
+    // CLEAR TABLE
+    // ============================================
+    function clearTable() {
+      document.getElementById('inventoryTableBody').innerHTML = 
+        '<tr><td colspan="6" class="text-center" style="padding: 50px;">Select an event and box to view inventory</td></tr>';
+      document.getElementById('progressText').textContent = 'Select an event to begin';
+      document.getElementById('confirmBoxBtn').disabled = true;
+    }
+
+    // ============================================
+    // LOGIN SCREEN INITIALIZATION
+    // ============================================
+    (function() {
+      console.log('🔧 Setting up login screen...');
+      
+      const nameInput = document.getElementById('nameInput');
+      const startBtn = document.getElementById('startBtn');
+      const errorMsg = document.getElementById('nameError');
+      
+      // Name input validation
+      nameInput.addEventListener('input', function() {
+        const name = this.value.trim();
+        
+        if (name.length >= 3) {
+          errorMsg.classList.remove('show');
+          startBtn.disabled = false;
+        } else {
+          if (name.length > 0) {
+            errorMsg.classList.add('show');
+          }
+          startBtn.disabled = true;
+        }
+      });
+      
+      // Enter key support
+      nameInput.addEventListener('keypress', function(e) {
+        if (e.key === 'Enter' && !startBtn.disabled) {
+          e.preventDefault();
+          startBtn.click();
+        }
+      });
+      
+      // Start button click
+      startBtn.addEventListener('click', function() {
+        const name = nameInput.value.trim();
+        
+        if (name.length < 3) {
+          errorMsg.classList.add('show');
+          nameInput.focus();
+          return;
+        }
+        
+        // Save user
+        currentUser = name;
+        localStorage.setItem('currentUser', currentUser);
+        localStorage.setItem('sessionStartTime', new Date().toISOString());
+        
+        console.log('✅ Login successful: ' + currentUser);
+        
+        // Show app
+        document.getElementById('loginScreen').style.display = 'none';
+        document.getElementById('app').style.display = 'block';
+        document.getElementById('currentUserDisplay').textContent = '👤 ' + currentUser;
+        
+        // Initialize
+        initializeApp();
+      });
+      
+      console.log('✅ Login screen ready');
+    })();
+
+    // ============================================
+    // CHECK FOR EXISTING SESSION ON LOAD
+    // ============================================
+    window.addEventListener('DOMContentLoaded', function() {
+      console.log('📱 App loaded');
+      
+      const savedUser = localStorage.getItem('currentUser');
+      const sessionStart = localStorage.getItem('sessionStartTime');
+      
+      if (savedUser && sessionStart) {
+        const hoursSince = (Date.now() - new Date(sessionStart).getTime()) / (1000 * 60 * 60);
+        
+        if (hoursSince < 12) {
+          currentUser = savedUser;
+          document.getElementById('loginScreen').style.display = 'none';
+          document.getElementById('app').style.display = 'block';
+          document.getElementById('currentUserDisplay').textContent = '👤 ' + currentUser;
+          console.log('✅ Resumed session: ' + currentUser);
+          initializeApp();
+          return;
+        }
+      }
+      
+      // Focus name input
+      setTimeout(function() {
+        document.getElementById('nameInput').focus();
+      }, 100);
+    });
+  </script>
+</body>
+</html>
