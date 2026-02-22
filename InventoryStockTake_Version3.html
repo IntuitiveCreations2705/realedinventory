@@ -537,6 +537,41 @@
     .text-center {
       text-align: center;
     }
+
+    /* ========================================
+       STORAGE INFO
+       ======================================== */
+    .storage-info {
+      background: #f0f4f8;
+      border-top: 1px solid #dde;
+      padding: 10px 20px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 12px;
+      color: #555;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    .storage-info span {
+      flex: 1;
+    }
+
+    #clearDataBtn {
+      background: #dc3545;
+      color: white;
+      border: none;
+      border-radius: 6px;
+      padding: 6px 14px;
+      font-size: 12px;
+      min-height: unset;
+      cursor: pointer;
+    }
+
+    #clearDataBtn:hover {
+      background: #c82333;
+    }
   </style>
 </head>
 <body>
@@ -668,6 +703,12 @@ Example:
         </small>
       </div>
     </div>
+
+    <!-- Storage Info -->
+    <div class="storage-info" id="storageInfo">
+      <span id="storageDetails">📦 Changes saved to this device's browser storage (localStorage)</span>
+      <button id="clearDataBtn">🗑 Clear Saved Data</button>
+    </div>
   </div>
 
   <!-- ========================================
@@ -719,20 +760,44 @@ HI-000301,Z14,Power Strip 6-way,CONTAINER,|NEEDED|,Power Distribution,,3,2,,0,0`
     // ============================================
     // CSV PARSER
     // ============================================
+    function parseCSVLine(line) {
+      var values = [];
+      var current = '';
+      var inQuotes = false;
+      for (var i = 0; i < line.length; i++) {
+        var c = line[i];
+        if (c === '"') {
+          if (inQuotes && line[i + 1] === '"') {
+            current += '"';
+            i++;
+          } else {
+            inQuotes = !inQuotes;
+          }
+        } else if (c === ',' && !inQuotes) {
+          values.push(current.trim());
+          current = '';
+        } else {
+          current += c;
+        }
+      }
+      values.push(current.trim());
+      return values;
+    }
+
     function parseCSV(csvText) {
       const lines = csvText.trim().split('\n');
-      const headers = lines[0].split(',').map(function(h) { return h.trim(); });
+      const headers = parseCSVLine(lines[0]);
       const data = [];
 
       for (let i = 1; i < lines.length; i++) {
-        const line = lines[i].trim();
-        if (!line) continue;
+        const line = lines[i];
+        if (!line.trim()) continue;
         
-        const values = line.split(',');
+        const values = parseCSVLine(line);
         const row = {};
         
         headers.forEach(function(header, index) {
-          row[header] = values[index] ? values[index].trim() : '';
+          row[header] = values[index] !== undefined ? values[index] : '';
         });
         
         data.push(row);
@@ -792,6 +857,7 @@ HI-000301,Z14,Power Strip 6-way,CONTAINER,|NEEDED|,Power Distribution,,3,2,,0,0`
             dataStatus.classList.add('success');
             document.getElementById('dataStatusText').innerHTML = 
               '✅ Restored previous session (' + inventoryData.length + ' items)';
+            updateStorageInfo(savedData.length);
           }
         }
       }
@@ -845,6 +911,7 @@ HI-000301,Z14,Power Strip 6-way,CONTAINER,|NEEDED|,Power Distribution,,3,2,,0,0`
       // Action buttons
       document.getElementById('confirmBoxBtn').addEventListener('click', handleConfirmBox);
       document.getElementById('exportBtn').addEventListener('click', handleExport);
+      document.getElementById('clearDataBtn').addEventListener('click', handleClearData);
 
       // Notes auto-save
       let saveTimeout;
@@ -886,6 +953,10 @@ HI-000301,Z14,Power Strip 6-way,CONTAINER,|NEEDED|,Power Distribution,,3,2,,0,0`
           document.getElementById('dataStatusText').innerHTML = 
             '✅ Loaded: ' + file.name + ' (' + inventoryData.length + ' items)';
           
+          // Clear previous transaction log for fresh session with new file
+          transactionLog = [];
+          localStorage.removeItem('transactionLog');
+
           saveToLocalStorage();
           
           if (currentEvent) {
@@ -1081,11 +1152,25 @@ HI-000301,Z14,Power Strip 6-way,CONTAINER,|NEEDED|,Power Distribution,,3,2,,0,0`
     // ============================================
     function saveToLocalStorage() {
       try {
-        localStorage.setItem('inventoryData', JSON.stringify(inventoryData));
+        const serialized = JSON.stringify(inventoryData);
+        localStorage.setItem('inventoryData', serialized);
         localStorage.setItem('lastSaved', new Date().toISOString());
+        updateStorageInfo(serialized.length);
       } catch (error) {
         console.warn('LocalStorage error:', error);
       }
+    }
+
+    // ============================================
+    // UPDATE STORAGE INFO DISPLAY
+    // ============================================
+    function updateStorageInfo(jsonBytes) {
+      const el = document.getElementById('storageDetails');
+      if (!el) return;
+      const kb = (jsonBytes / 1024).toFixed(1);
+      const items = inventoryData.length;
+      el.textContent = '📦 ' + items + ' items saved to browser storage (localStorage) — ' +
+        kb + ' KB  |  Changes are stored on this device only and exported when you click Export';
     }
 
     // ============================================
@@ -1271,6 +1356,29 @@ HI-000301,Z14,Power Strip 6-way,CONTAINER,|NEEDED|,Power Distribution,,3,2,,0,0`
         '<tr><td colspan="6" class="text-center" style="padding: 50px;">Select an event and box to view inventory</td></tr>';
       document.getElementById('progressText').textContent = 'Select an event to begin';
       document.getElementById('confirmBoxBtn').disabled = true;
+    }
+
+    // ============================================
+    // CLEAR ALL SAVED DATA
+    // ============================================
+    function handleClearData() {
+      if (!confirm('Clear all saved data from this device?\n\nThis will remove the stored inventory, transaction log, and notes from browser storage. Export your data first if you need it.\n\nContinue?')) return;
+      localStorage.removeItem('inventoryData');
+      localStorage.removeItem('lastSaved');
+      localStorage.removeItem('transactionLog');
+      localStorage.removeItem('stockTakeNotes');
+      localStorage.removeItem('notesLastSaved');
+      inventoryData = [];
+      transactionLog = [];
+      document.getElementById('storageDetails').textContent = '📦 Browser storage cleared — load guidata.csv to begin';
+      document.getElementById('lastSavedInfo').textContent = 'Auto-saving to device...';
+      document.getElementById('sessionNotes').value = '';
+      document.getElementById('notesAutoSave').textContent = '(Auto-saved)';
+      const dataStatus = document.getElementById('dataStatus');
+      dataStatus.classList.remove('success');
+      dataStatus.classList.add('warning');
+      document.getElementById('dataStatusText').innerHTML = '⚠️ Using sample data (10 items)';
+      initializeApp();
     }
 
     // ============================================
